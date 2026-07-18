@@ -26,7 +26,7 @@ export default function ProductCard({ product }: { product: Product }) {
       await addToCart(product.id, 1)
       alert('Added to cart!')
     } catch (error: any) {
-      const errorMsg = error?.response?.data?.error || error?.message || 'Failed to add to cart'
+      const errorMsg = error?.message || 'Failed to add to cart'
       alert(errorMsg)
     }
   }

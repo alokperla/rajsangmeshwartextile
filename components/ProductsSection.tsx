@@ -94,8 +94,9 @@ export default function ProductsSection() {
       await addToCart(product.id, 1)
       showToast(`✅ ${product.name} added to cart!`)
       openCart()
-    } catch {
-      showToast('❌ Failed to add to cart')
+    } catch (error: any) {
+      const message = error?.message || 'Failed to add to cart'
+      showToast(`❌ ${message}`)
     }
   }
 

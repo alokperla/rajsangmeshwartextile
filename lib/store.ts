@@ -1,14 +1,14 @@
 import { create } from 'zustand'
 import axios from 'axios'
 import { auth, db } from './firebase'
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore'
 
 const getAdminEmail = () => {
   return 'alokperla8055@gmail.com'
@@ -159,56 +159,73 @@ export const useCart = create<CartState>((set, get) => ({
   items: [],
   fetchCart: async () => {
     try {
-      const token = await getAuthToken()
-      if (!token) {
+      const user = useAuth.getState().user
+      if (!user?.id) {
         set({ items: [] })
         return
       }
 
-      const res = await axios.get('/api/cart', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      set({ items: res.data.items || [] })
+      const cartRef = collection(db, 'carts', user.id, 'items')
+      const snapshot = await getDocs(cartRef)
+      const items = snapshot.docs.map((docSnapshot) => ({
+        id: docSnapshot.id,
+        ...(docSnapshot.data() as any)
+      }))
+
+      set({ items })
     } catch (error: any) {
-      if (error.response?.status !== 401) {
-        console.error('Failed to fetch cart:', error.message)
-      }
+      console.error('Failed to fetch cart:', error.message)
       set({ items: [] })
     }
   },
   addToCart: async (productId, quantity) => {
     try {
-      const token = await getAuthToken()
-      if (!token) {
+      const user = useAuth.getState().user
+      if (!user?.id) {
         throw new Error('Please log in to add items to your cart.')
       }
 
-      await axios.post('/api/cart', { productId, quantity }, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const productDoc = await getDoc(doc(db, 'products', productId))
+      if (!productDoc.exists()) {
+        throw new Error('Product not found.')
+      }
+
+      const productData = { id: productDoc.id, ...(productDoc.data() as any) }
+      const itemRef = doc(db, 'carts', user.id, 'items', productId)
+      const existing = await getDoc(itemRef)
+
+      if (existing.exists()) {
+        const currentQuantity = existing.data().quantity || 0
+        await updateDoc(itemRef, {
+          quantity: currentQuantity + quantity,
+          updatedAt: new Date().toISOString()
+        })
+      } else {
+        await setDoc(itemRef, {
+          product: productData,
+          quantity,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+      }
+
       await get().fetchCart()
     } catch (error: any) {
-      if (error.response?.status !== 401) {
-        console.error('Failed to add to cart:', error.message)
-      }
+      console.error('Failed to add to cart:', error.message)
       throw error
     }
   },
   removeFromCart: async (itemId) => {
     try {
-      const token = await getAuthToken()
-      if (!token) {
+      const user = useAuth.getState().user
+      if (!user?.id) {
         throw new Error('Please log in to manage your cart.')
       }
 
-      await axios.delete(`/api/cart/${itemId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      await deleteDoc(doc(db, 'carts', user.id, 'items', itemId))
       await get().fetchCart()
     } catch (error: any) {
-      if (error.response?.status !== 401) {
-        console.error('Failed to remove from cart:', error.message)
-      }
+      console.error('Failed to remove from cart:', error.message)
       throw error
     }
   }
