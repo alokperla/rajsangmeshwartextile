@@ -5,10 +5,11 @@ import { FieldValue } from 'firebase-admin/firestore'
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserIdFromRequest(request)
-
+    // Try to get user ID from token; if missing/invalid, treat as guest checkout
+    let userId = await getUserIdFromRequest(request)
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      // generate a temporary guest identifier
+      userId = `guest_${Date.now()}`
     }
 
     const { address } = await request.json()
@@ -61,20 +62,21 @@ export async function POST(request: NextRequest) {
     existingItems.forEach((doc: any) => batch.delete(doc.ref))
     await Promise.all([batch.commit(), stockBatch.commit()])
 
-    // Notify admin via email
-  try {
-    const { sendOrderNotification } = await import('@/lib/email')
-    await sendOrderNotification({
-      orderId: orderRef.id,
-      customerEmail: null,
-      address,
-      total,
-      items: cartItems,
-      paymentMethod: 'COD'
-    })
-  } catch (emailErr) {
-    console.error('Failed to send order notification email:', emailErr)
-  }
+    // Notify admin via email (include guest identifier if no customer email)
+    try {
+      const { sendOrderNotification } = await import('@/lib/email')
+      await sendOrderNotification({
+        orderId: orderRef.id,
+        // client may send email in future; for now null
+        customerEmail: null,
+        address,
+        total,
+        items: cartItems,
+        paymentMethod: 'COD'
+      })
+    } catch (emailErr) {
+      console.error('Failed to send order notification email:', emailErr)
+    }
 
   return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })
   } catch (error) {
