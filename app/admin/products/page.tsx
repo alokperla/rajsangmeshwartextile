@@ -174,18 +174,21 @@ export default function AdminProducts() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-semibold text-slate-900">Products</h1>
-        <button 
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-slate-50/80 p-5 shadow-sm md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">Inventory</p>
+          <h1 className="mt-1 text-2xl font-semibold text-slate-900">Products</h1>
+        </div>
+        <button
           onClick={() => setShowModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
+          className="inline-flex items-center justify-center rounded-full bg-blue-600 px-5 py-2.5 font-medium text-white transition hover:bg-blue-700"
         >
           + Add Product
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+      <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
@@ -233,9 +236,15 @@ export default function AdminProducts() {
 
       {/* Add Product Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">{editingProductId ? 'Edit Product' : 'Add New Product'}</h2>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">Product Editor</p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">{editingProductId ? 'Edit Product' : 'Add New Product'}</h2>
+              </div>
+              <button type="button" onClick={() => { setShowModal(false); resetForm() }} className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700">✕</button>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>

@@ -1,19 +1,22 @@
 export default function AdminOverview() {
   return (
-    <div>
-      <h1 className="text-3xl font-semibold text-slate-900 mb-8">Dashboard Overview</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="text-sm font-medium text-slate-500 mb-2">Total Products</div>
+    <div className="space-y-6">
+      <div className="rounded-[2rem] border border-slate-200 bg-slate-50/80 p-5 shadow-sm">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-slate-400">Overview</p>
+        <h1 className="mt-1 text-2xl font-semibold text-slate-900">Dashboard Overview</h1>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-2 text-sm font-medium text-slate-500">Total Products</div>
           <div className="text-4xl font-bold text-slate-900">0</div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="text-sm font-medium text-slate-500 mb-2">Total Orders</div>
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-2 text-sm font-medium text-slate-500">Total Orders</div>
           <div className="text-4xl font-bold text-slate-900">0</div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <div className="text-sm font-medium text-slate-500 mb-2">Total Customers</div>
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-2 text-sm font-medium text-slate-500">Total Customers</div>
           <div className="text-4xl font-bold text-slate-900">0</div>
         </div>
       </div>

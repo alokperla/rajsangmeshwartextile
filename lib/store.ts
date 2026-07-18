@@ -59,6 +59,23 @@ interface CartState {
   removeFromCart: (itemId: string) => Promise<void>
 }
 
+const getAuthToken = async () => {
+  if (typeof window === 'undefined') return null
+
+  const storedToken = localStorage.getItem('token')
+  if (storedToken) return storedToken
+
+  const currentUser = auth.currentUser
+  if (currentUser) {
+    const freshToken = await currentUser.getIdToken()
+    localStorage.setItem('token', freshToken)
+    axios.defaults.headers.common['Authorization'] = `Bearer ${freshToken}`
+    return freshToken
+  }
+
+  return null
+}
+
 // Setup axios interceptor to add token to all requests
 axios.interceptors.request.use(
   (config) => {
@@ -142,14 +159,15 @@ export const useCart = create<CartState>((set, get) => ({
   items: [],
   fetchCart: async () => {
     try {
-      if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('token')
-        if (!token) {
-          set({ items: [] })
-          return
-        }
+      const token = await getAuthToken()
+      if (!token) {
+        set({ items: [] })
+        return
       }
-      const res = await axios.get('/api/cart')
+
+      const res = await axios.get('/api/cart', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       set({ items: res.data.items || [] })
     } catch (error: any) {
       if (error.response?.status !== 401) {
@@ -160,7 +178,14 @@ export const useCart = create<CartState>((set, get) => ({
   },
   addToCart: async (productId, quantity) => {
     try {
-      await axios.post('/api/cart', { productId, quantity })
+      const token = await getAuthToken()
+      if (!token) {
+        throw new Error('Please log in to add items to your cart.')
+      }
+
+      await axios.post('/api/cart', { productId, quantity }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       await get().fetchCart()
     } catch (error: any) {
       if (error.response?.status !== 401) {
@@ -171,7 +196,14 @@ export const useCart = create<CartState>((set, get) => ({
   },
   removeFromCart: async (itemId) => {
     try {
-      await axios.delete(`/api/cart/${itemId}`)
+      const token = await getAuthToken()
+      if (!token) {
+        throw new Error('Please log in to manage your cart.')
+      }
+
+      await axios.delete(`/api/cart/${itemId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
       await get().fetchCart()
     } catch (error: any) {
       if (error.response?.status !== 401) {
@@ -181,6 +213,10 @@ export const useCart = create<CartState>((set, get) => ({
     }
   }
 }))
+
+if (typeof window !== 'undefined') {
+  useAuth.getState().initialize()
+}
 
 // ── TOAST STORE ──
 interface Toast {
