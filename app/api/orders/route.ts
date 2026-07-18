@@ -87,7 +87,9 @@ export async function POST(request: NextRequest) {
       console.error('Failed to send order notification email:', emailErr)
     }
 
-  return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })
+    return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })
+  } catch (error) {
     console.error('Error placing order:', error instanceof Error ? error.stack : error)
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to place order' }, { status: 500 })
+  }
 }
