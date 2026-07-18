@@ -11,12 +11,16 @@ export async function POST(request: NextRequest) {
       // generate a temporary guest identifier
       userId = `guest_${Date.now()}`
     }
+    console.log('🛒 Order request - userId:', userId)
 
+    // Extract payload
     const { address, items: clientItems } = await request.json()
+    console.log('🛒 Order payload:', { address, clientItems })
 
     let cartItems: any[] = []
     if (clientItems && clientItems.length) {
       cartItems = clientItems
+      console.log('🛒 Received client items (guest):', cartItems)
     } else {
       const cartItemsSnapshot = await adminDb
         .collection('carts')
@@ -28,7 +32,7 @@ export async function POST(request: NextRequest) {
         id: doc.id,
         ...doc.data()
       }))
-    }
+      console.log('🛒 Fetched cart items (auth):', cartItems)    }
 
     if (!cartItems.length) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
@@ -84,8 +88,6 @@ export async function POST(request: NextRequest) {
     }
 
   return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })
-  } catch (error) {
-    console.error('Error placing order:', error)
-    return NextResponse.json({ error: 'Failed to place order' }, { status: 500 })
-  }
+    console.error('Error placing order:', error instanceof Error ? error.stack : error)
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to place order' }, { status: 500 })
 }
