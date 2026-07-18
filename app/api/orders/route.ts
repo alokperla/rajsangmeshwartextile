@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { getUserIdFromRequest } from '@/lib/auth'
-import * as admin from 'firebase-admin'
+import { FieldValue } from 'firebase-admin/firestore'
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     cartItems.forEach((item: any) => {
       const productRef = adminDb.collection('products').doc(item.product.id)
       stockBatch.update(productRef, {
-        stock: admin.firestore.FieldValue.increment(-item.quantity)
+        stock: FieldValue.increment(-item.quantity)
       })
     })
 
