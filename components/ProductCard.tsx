@@ -4,7 +4,7 @@ import { useCart } from '../lib/store'
 import { useAuth } from '../lib/store'
 
 interface Product {
-  id: number
+  id: string
   name: string
   category: string
   price: number

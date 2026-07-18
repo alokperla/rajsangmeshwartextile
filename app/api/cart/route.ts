@@ -10,6 +10,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const uid = authCheck.uid
+    if (!uid) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const cartSnapshot = await adminDb.collection('carts').doc(uid).collection('items').get()
     
     const items = cartSnapshot.docs.map(doc => ({
@@ -32,6 +35,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const uid = authCheck.uid
+    if (!uid) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
     const { productId, quantity } = await request.json()
 
     // Fetch product details to store in cart (for fast rendering without JOINs)

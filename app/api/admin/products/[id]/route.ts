@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { verifyAdmin } from '@/lib/auth'
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const adminCheck = await verifyAdmin(request)
   if (adminCheck.error) {
     return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status })
@@ -10,7 +10,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
   try {
     const data = await request.json()
-    const { id } = params
+    const { id } = await params
 
     const updates = {
       ...data,
@@ -26,15 +26,14 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const adminCheck = await verifyAdmin(request)
   if (adminCheck.error) {
     return NextResponse.json({ error: adminCheck.error }, { status: adminCheck.status })
   }
 
   try {
-    const { id } = params
-    await adminDb.collection('products').doc(id).delete()
+    const { id } = await params
 
     return NextResponse.json({ success: true })
   } catch (error) {

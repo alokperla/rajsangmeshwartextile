@@ -44,3 +44,13 @@ export async function verifyUser(request: NextRequest) {
     return { error: 'Unauthorized', status: 401 }
   }
 }
+
+export async function getUserIdFromRequest(request: NextRequest) {
+  const authCheck = await verifyUser(request)
+
+  if ('error' in authCheck || !authCheck.uid) {
+    return null
+  }
+
+  return authCheck.uid
+}

@@ -60,48 +60,51 @@ export default function Cart() {
     <div className="container mx-auto px-4 py-10">
       <div className="rounded-[2rem] bg-white/95 p-8 shadow-2xl ring-1 ring-slate-200 backdrop-blur-sm">
         <h1 className="text-3xl font-semibold text-slate-900 mb-6">Shopping Cart</h1>
+
         {items.length === 0 ? (
           <p className="text-slate-600">Your cart is empty</p>
-      ) : (
-        <>
-          <div className="space-y-4">
-            {items.map(item => (
-              <div key={item.id} className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="font-semibold text-slate-900">{item.product.name}</h3>
-                  <p className="text-sm text-slate-600">Quantity: {item.quantity}</p>
-                  <p className="text-sm text-slate-600">Price: ₹{item.product.price * item.quantity}</p>
+        ) : (
+          <>
+            <div className="space-y-4">
+              {items.map((item) => (
+                <div key={item.id} className="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-semibold text-slate-900">{item.product.name}</h3>
+                    <p className="text-sm text-slate-600">Quantity: {item.quantity}</p>
+                    <p className="text-sm text-slate-600">Price: ₹{item.product.price * item.quantity}</p>
+                  </div>
+                  <button
+                    onClick={() => removeFromCart(item.id)}
+                    className="rounded-full bg-red-500 px-4 py-2 text-white transition hover:bg-red-600"
+                  >
+                    Remove
+                  </button>
                 </div>
-                <button
-                  onClick={() => removeFromCart(item.id)}
-                  className="rounded-full bg-red-500 px-4 py-2 text-white transition hover:bg-red-600"
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-          </div>
-          <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-6">
-            <p className="text-xl font-bold text-slate-900">Total: ₹{total}</p>
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-slate-700 mb-2">Delivery Address</label>
-              <textarea
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
-                rows={3}
-                required
-              />
+              ))}
             </div>
-            <button
-              onClick={handleCheckout}
-              className="mt-4 rounded-full bg-green-600 px-6 py-3 text-white transition hover:bg-green-700"
-            >
-              Place Order
-            </button>
-          </div>
-        </>
-      )}
+
+            <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-6">
+              <p className="text-xl font-bold text-slate-900">Total: ₹{total}</p>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-slate-700 mb-2">Delivery Address</label>
+                <textarea
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  rows={3}
+                  required
+                />
+              </div>
+              <button
+                onClick={handleCheckout}
+                className="mt-4 rounded-full bg-green-600 px-6 py-3 text-white transition hover:bg-green-700"
+              >
+                Place Order
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   )
 }

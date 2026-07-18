@@ -1,48 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { adminDb } from '@/lib/firebase-admin'
 import { getUserIdFromRequest } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = getUserIdFromRequest(request)
-    
+    const userId = await getUserIdFromRequest(request)
+
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { address } = await request.json()
 
-    const cart = await prisma.cart.findFirst({
-      where: { userId },
-      include: { items: { include: { product: true } } }
-    })
+    const cartItemsSnapshot = await adminDb
+      .collection('carts')
+      .doc(userId)
+      .collection('items')
+      .get()
 
-    if (!cart || cart.items.length === 0) {
+    const cartItems = cartItemsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+
+    if (!cartItems.length) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
 
-    const total = cart.items.reduce((sum: number, item: any) => sum + item.product.price * item.quantity, 0)
+    const total = cartItems.reduce((sum: number, item: any) => sum + item.product.price * item.quantity, 0)
 
-    const order = await prisma.order.create({
-      data: {
-        userId,
-        total,
-        address,
-        items: {
-          create: cart.items.map((item: any) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.product.price
-          }))
-        }
-      }
+    const orderRef = await adminDb.collection('orders').add({
+      userId,
+      total,
+      address,
+      items: cartItems.map((item: any) => ({
+        productId: item.product.id,
+        product: item.product,
+        quantity: item.quantity,
+        price: item.product.price
+      })),
+      createdAt: new Date().toISOString()
     })
 
-    // Clear cart
-    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } })
+    const batch = adminDb.batch()
+    const cartRef = adminDb.collection('carts').doc(userId)
+    const itemsRef = cartRef.collection('items')
+    const existingItems = await itemsRef.get()
 
-    return NextResponse.json(order, { status: 201 })
+    existingItems.forEach((doc) => batch.delete(doc.ref))
+    await batch.commit()
+
+    return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })
   } catch (error) {
+    console.error('Error placing order:', error)
     return NextResponse.json({ error: 'Failed to place order' }, { status: 500 })
   }
 }
