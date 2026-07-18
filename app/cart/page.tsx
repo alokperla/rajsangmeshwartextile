@@ -48,7 +48,15 @@ export default function Cart() {
       return
     }
     try {
-      await axios.post('/api/orders', { address })
+      await axios.post('/api/orders', {
+        address,
+        items: items.map((i) => ({
+          productId: i.product.id,
+          product: i.product,
+          quantity: i.quantity,
+          price: i.product.price
+        }))
+      })
       alert('Order placed successfully!')
       setAddress('')
       await fetchCart()

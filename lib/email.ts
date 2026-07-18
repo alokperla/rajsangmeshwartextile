@@ -1,4 +1,4 @@
-const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'alok.perla8080@gmail.com'
+const ADMIN_NOTIFICATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'alokperla8055@gmail.com'
 
 export async function sendOrderNotification({
   orderId,

@@ -12,24 +12,29 @@ export async function POST(request: NextRequest) {
       userId = `guest_${Date.now()}`
     }
 
-    const { address } = await request.json()
+    const { address, items: clientItems } = await request.json()
 
-    const cartItemsSnapshot = await adminDb
-      .collection('carts')
-      .doc(userId)
-      .collection('items')
-      .get()
+    let cartItems: any[] = []
+    if (clientItems && clientItems.length) {
+      cartItems = clientItems
+    } else {
+      const cartItemsSnapshot = await adminDb
+        .collection('carts')
+        .doc(userId)
+        .collection('items')
+        .get()
 
-    const cartItems = cartItemsSnapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+      cartItems = cartItemsSnapshot.docs.map((doc: any) => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+    }
 
     if (!cartItems.length) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
 
-    const total = cartItems.reduce((sum: number, item: any) => sum + item.product.price * item.quantity, 0)
+    const total = cartItems.reduce((sum: number, item: any) => sum + (item.product?.price ?? item.price ?? 0) * item.quantity, 0)
 
     const orderRef = await adminDb.collection('orders').add({
       userId,
@@ -38,10 +43,10 @@ export async function POST(request: NextRequest) {
       status: 'alive',
       paymentMethod: 'COD',
       items: cartItems.map((item: any) => ({
-        productId: item.product.id,
-        product: item.product,
+        productId: item.productId ?? item.product?.id,
+        product: item.product ?? {},
         quantity: item.quantity,
-        price: item.product.price
+        price: item.price ?? item.product?.price
       })),
       createdAt: new Date().toISOString()
     })
@@ -53,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     const stockBatch = adminDb.batch()
     cartItems.forEach((item: any) => {
-      const productRef = adminDb.collection('products').doc(item.product.id)
+      const productRef = adminDb.collection('products').doc(item.productId ?? item.product?.id)
       stockBatch.update(productRef, {
         stock: FieldValue.increment(-item.quantity)
       })
