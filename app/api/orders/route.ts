@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { getUserIdFromRequest } from '@/lib/auth'
+import admin from 'firebase-admin'
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,6 +34,8 @@ export async function POST(request: NextRequest) {
       userId,
       total,
       address,
+      status: 'alive',
+      paymentMethod: 'COD',
       items: cartItems.map((item: any) => ({
         productId: item.product.id,
         product: item.product,
@@ -47,10 +50,33 @@ export async function POST(request: NextRequest) {
     const itemsRef = cartRef.collection('items')
     const existingItems = await itemsRef.get()
 
-    existingItems.forEach((doc: any) => batch.delete(doc.ref))
-    await batch.commit()
+    const stockBatch = adminDb.batch()
+    cartItems.forEach((item: any) => {
+      const productRef = adminDb.collection('products').doc(item.product.id)
+      stockBatch.update(productRef, {
+        stock: admin.firestore.FieldValue.increment(-item.quantity)
+      })
+    })
 
-    return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })
+    existingItems.forEach((doc: any) => batch.delete(doc.ref))
+    await Promise.all([batch.commit(), stockBatch.commit()])
+
+    // Notify admin via email
+  try {
+    const { sendOrderNotification } = await import('@/lib/email')
+    await sendOrderNotification({
+      orderId: orderRef.id,
+      customerEmail: null,
+      address,
+      total,
+      items: cartItems,
+      paymentMethod: 'COD'
+    })
+  } catch (emailErr) {
+    console.error('Failed to send order notification email:', emailErr)
+  }
+
+  return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })
   } catch (error) {
     console.error('Error placing order:', error)
     return NextResponse.json({ error: 'Failed to place order' }, { status: 500 })
