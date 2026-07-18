@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       name: data.name,
       category: data.category || 'Towels',
       price: Number(data.price) || 0,
-      image: data.image || '/placeholder.jpg',
+      image: data.image || data.imageUrl || '/placeholder.jpg',
       description: data.description || '',
       stock: Number(data.stock) || 0,
       createdAt: new Date().toISOString(),

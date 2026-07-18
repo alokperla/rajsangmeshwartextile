@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { storage } from '@/lib/firebase'
 import { useToast } from '@/lib/store'
 
 interface Product {
@@ -16,10 +18,13 @@ export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState('')
   const { showToast } = useToast()
   
   // Form State
-  const [formData, setFormData] = useState({ name: '', category: 'Towels', price: '', stock: '' })
+  const [formData, setFormData] = useState({ name: '', category: 'Towels', price: '', stock: '', description: '', imageUrl: '' })
 
   const fetchProducts = async () => {
     setLoading(true)
@@ -36,16 +41,52 @@ export default function AdminProducts() {
     fetchProducts()
   }, [])
 
+  const resetForm = () => {
+    setFormData({ name: '', category: 'Towels', price: '', stock: '', description: '', imageUrl: '' })
+    setImageFile(null)
+    setImagePreview('')
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setUploading(true)
+
     try {
-      await axios.post('/api/admin/products', formData)
+      let image = formData.imageUrl || '/placeholder.jpg'
+
+      if (imageFile) {
+        const fileName = `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`
+        const imageRef = ref(storage, `products/${fileName}`)
+        await uploadBytes(imageRef, imageFile)
+        image = await getDownloadURL(imageRef)
+      }
+
+      const payload = {
+        ...formData,
+        price: Number(formData.price),
+        stock: Number(formData.stock),
+        image,
+        description: formData.description || ''
+      }
+
+      await axios.post('/api/admin/products', payload)
       showToast('✅ Product added successfully')
       setShowModal(false)
-      setFormData({ name: '', category: 'Towels', price: '', stock: '' })
+      resetForm()
       fetchProducts()
-    } catch (error) {
-      showToast('❌ Failed to add product')
+    } catch (error: any) {
+      console.error(error)
+      showToast(error?.response?.data?.error || '❌ Failed to add product')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -115,7 +156,7 @@ export default function AdminProducts() {
       {/* Add Product Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold mb-4">Add New Product</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -135,6 +176,23 @@ export default function AdminProducts() {
                   <option>Sets</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-blue-500" rows={3} placeholder="Short product description" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Image URL (optional)</label>
+                <input type="url" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full border border-slate-300 rounded-lg px-3 py-2 outline-none focus:border-blue-500" placeholder="https://example.com/image.jpg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Upload Image</label>
+                <input type="file" accept="image/*" onChange={handleImageChange} className="w-full rounded-lg border border-dashed border-slate-300 px-3 py-2 text-sm" />
+                {imagePreview && (
+                  <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
+                    <img src={imagePreview} alt="Preview" className="h-40 w-full object-cover" />
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Price (₹)</label>
@@ -146,8 +204,10 @@ export default function AdminProducts() {
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Save Product</button>
+                <button type="button" onClick={() => { setShowModal(false); resetForm() }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+                <button type="submit" disabled={uploading} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:cursor-not-allowed disabled:bg-blue-400">
+                  {uploading ? 'Uploading...' : 'Save Product'}
+                </button>
               </div>
             </form>
           </div>

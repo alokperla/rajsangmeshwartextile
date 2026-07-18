@@ -135,7 +135,11 @@ export default function ProductsSection() {
                       </div>
                     )}
                     <div className="product-wishlist">♡</div>
-                    <span className="product-emoji">{meta.emoji}</span>
+                    {p.image ? (
+                      <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="product-emoji">{meta.emoji}</span>
+                    )}
                     <div className="product-actions">
                       {user ? (
                         <button className="btn btn-primary" onClick={() => handleAddToCart(p)}>
