@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { adminDb } from '@/lib/firebase-admin'
 import { getUserIdFromRequest } from '@/lib/auth'
-import admin from 'firebase-admin'
+import * as admin from 'firebase-admin'
 
 export async function POST(request: NextRequest) {
   try {
