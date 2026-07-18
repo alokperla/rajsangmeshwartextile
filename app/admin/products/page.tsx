@@ -112,9 +112,9 @@ export default function AdminProducts() {
       resetForm()
       fetchProducts()
     } catch (error: any) {
-      console.error(error)
+      console.error('Add product failed:', error)
       setUploadMessage('Product could not be saved.')
-      showToast(error?.response?.data?.error || '❌ Failed to add product')
+      showToast(error?.response?.data?.error || error?.message || '❌ Failed to add product')
     } finally {
       setUploading(false)
     }

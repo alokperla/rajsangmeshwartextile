@@ -10,6 +10,15 @@ import {
 } from 'firebase/auth'
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
+const getAdminEmail = () => {
+  return (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@rajsangmeshwar.com').toLowerCase()
+}
+
+const isAdminEmail = (email?: string | null) => {
+  const normalizedEmail = email?.toLowerCase()
+  return normalizedEmail === getAdminEmail() || normalizedEmail === 'alokperla8055@gmail.com'
+}
+
 export interface User {
   id: string
   email: string
@@ -76,13 +85,23 @@ export const useAuth = create<AuthState>((set) => ({
         // Fetch custom user data from Firestore
         const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
         const userData = userDoc.data()
+        const resolvedRole = isAdminEmail(firebaseUser.email) ? 'ADMIN' : (userData?.role || 'CUSTOMER')
+
+        if (userData?.role !== resolvedRole) {
+          await setDoc(doc(db, 'users', firebaseUser.uid), {
+            email: firebaseUser.email,
+            name: userData?.name || firebaseUser.displayName || '',
+            role: resolvedRole,
+            updatedAt: new Date().toISOString()
+          }, { merge: true })
+        }
         
         set({ 
           user: { 
             id: firebaseUser.uid, 
             email: firebaseUser.email || '', 
-            name: userData?.name,
-            role: userData?.role || 'CUSTOMER'
+            name: userData?.name || firebaseUser.displayName || '',
+            role: resolvedRole
           }, 
           token,
           authLoading: false
@@ -102,8 +121,7 @@ export const useAuth = create<AuthState>((set) => ({
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
     const uid = userCredential.user.uid
     
-    // Assign ADMIN role if the email matches
-    const role = email === 'admin@rajsangmeshwar.com' ? 'ADMIN' : 'CUSTOMER'
+    const role = isAdminEmail(email) ? 'ADMIN' : 'CUSTOMER'
 
     // Create user document in Firestore
     await setDoc(doc(db, 'users', uid), {
