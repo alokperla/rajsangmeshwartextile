@@ -38,7 +38,9 @@ export default function Cart() {
     )
   }
 
-  const total = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const shipping = subtotal > 0 ? 99 : 0
+  const total = subtotal + shipping
 
   const handleCheckout = async () => {
     if (!address.trim()) {
@@ -83,10 +85,21 @@ export default function Cart() {
               ))}
             </div>
 
-            <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-6">
-              <p className="text-xl font-bold text-slate-900">Total: ₹{total}</p>
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-slate-700 mb-2">Delivery Address</label>
+            <div className="mt-8 rounded-[2rem] border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <div className="flex items-center justify-between text-sm text-slate-600">
+                <span>Subtotal</span>
+                <span>₹{subtotal}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-sm text-slate-600">
+                <span>Delivery / Shipping</span>
+                <span>₹{shipping}</span>
+              </div>
+              <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4 text-lg font-semibold text-slate-900">
+                <span>Total</span>
+                <span>₹{total}</span>
+              </div>
+              <div className="mt-6">
+                <label className="mb-2 block text-sm font-medium text-slate-700">Delivery Address</label>
                 <textarea
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -97,7 +110,7 @@ export default function Cart() {
               </div>
               <button
                 onClick={handleCheckout}
-                className="mt-4 rounded-full bg-green-600 px-6 py-3 text-white transition hover:bg-green-700"
+                className="mt-6 rounded-full bg-green-600 px-6 py-3 text-white transition hover:bg-green-700"
               >
                 Place Order
               </button>

@@ -37,12 +37,12 @@ export default function Header() {
           </Link>
 
           <nav className="main-nav">
-            <a href="#home" className="active">Home</a>
-            <a href="#categories">Categories</a>
-            <a href="#products">Products</a>
-            <a href="#b2b">B2B</a>
-            <a href="#about">About</a>
-            <a href="#contact">Contact</a>
+            <Link href="/" className="active">Home</Link>
+            <Link href="/#categories">Categories</Link>
+            <Link href="/#products">Products</Link>
+            <Link href="/#b2b">B2B</Link>
+            <Link href="/#about">About</Link>
+            <Link href="/#contact">Contact</Link>
           </nav>
 
           <div className="search-bar">
@@ -81,12 +81,12 @@ export default function Header() {
       <div className={`mobile-menu-overlay${mobileOpen ? ' open' : ''}`} onClick={() => setMobileOpen(false)} />
       <div className={`mobile-menu${mobileOpen ? ' open' : ''}`}>
         <button className="mobile-menu-close" onClick={() => setMobileOpen(false)}>✕</button>
-        <a href="#home" onClick={() => setMobileOpen(false)}>Home</a>
-        <a href="#categories" onClick={() => setMobileOpen(false)}>Categories</a>
-        <a href="#products" onClick={() => setMobileOpen(false)}>Products</a>
-        <a href="#b2b" onClick={() => setMobileOpen(false)}>B2B</a>
-        <a href="#about" onClick={() => setMobileOpen(false)}>About</a>
-        <a href="#contact" onClick={() => setMobileOpen(false)}>Contact</a>
+        <Link href="/" onClick={() => setMobileOpen(false)}>Home</Link>
+        <Link href="/#categories" onClick={() => setMobileOpen(false)}>Categories</Link>
+        <Link href="/#products" onClick={() => setMobileOpen(false)}>Products</Link>
+        <Link href="/#b2b" onClick={() => setMobileOpen(false)}>B2B</Link>
+        <Link href="/#about" onClick={() => setMobileOpen(false)}>About</Link>
+        <Link href="/#contact" onClick={() => setMobileOpen(false)}>Contact</Link>
         {user ? (
           <>
             <div style={{ padding: '12px 16px', fontSize: 13, color: 'var(--grey)' }}>

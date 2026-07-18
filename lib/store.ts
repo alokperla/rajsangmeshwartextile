@@ -11,12 +11,12 @@ import {
 import { doc, getDoc, setDoc } from 'firebase/firestore'
 
 const getAdminEmail = () => {
-  return (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@rajsangmeshwar.com').toLowerCase()
+  return 'alokperla8055@gmail.com'
 }
 
 const isAdminEmail = (email?: string | null) => {
   const normalizedEmail = email?.toLowerCase()
-  return normalizedEmail === getAdminEmail() || normalizedEmail === 'alokperla8055@gmail.com'
+  return normalizedEmail === getAdminEmail()
 }
 
 export interface User {
