@@ -62,14 +62,25 @@ export async function POST(request: NextRequest) {
 
     const stockBatch = adminDb.batch()
     cartItems.forEach((item: any) => {
-      const productRef = adminDb.collection('products').doc(item.productId ?? item.product?.id)
+      const productId = item.productId ?? item.product?.id
+      if (!productId) {
+        console.warn('🛒 Skipping stock update: missing productId', item)
+        return
+      }
+      const productRef = adminDb.collection('products').doc(productId)
       stockBatch.update(productRef, {
         stock: FieldValue.increment(-item.quantity)
       })
     })
 
     existingItems.forEach((doc: any) => batch.delete(doc.ref))
-    await Promise.all([batch.commit(), stockBatch.commit()])
+    // Commit both batch operations and handle any errors
+    try {
+      await Promise.all([batch.commit(), stockBatch.commit()])
+    } catch (commitErr) {
+      console.error('🛒 Batch commit error:', commitErr)
+      throw commitErr
+    }
 
     // Notify admin via email (include guest identifier if no customer email)
     try {
@@ -90,6 +101,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })
   } catch (error) {
     console.error('Error placing order:', error instanceof Error ? error.stack : error)
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Failed to place order' }, { status: 500 })
+    // Return full error information for debugging (remove before production)
+    const errorMessage = error instanceof Error ? `${error.message}\n${error.stack}` : String(error)
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }
