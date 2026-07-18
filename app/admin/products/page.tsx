@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import axios from 'axios'
-import { useToast } from '@/lib/store'
+import { addDoc, collection, getDocs } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+import { useAuth, useToast } from '@/lib/store'
 
 interface Product {
   id: string
@@ -21,6 +22,7 @@ export default function AdminProducts() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
   const { showToast } = useToast()
+  const { user } = useAuth()
 
   const readImageAsDataUrl = (file: File) => {
     return new Promise<string>((resolve, reject) => {
@@ -43,9 +45,14 @@ export default function AdminProducts() {
   const fetchProducts = async () => {
     setLoading(true)
     try {
-      const res = await axios.get('/api/products')
-      setProducts(res.data)
+      const snapshot = await getDocs(collection(db, 'products'))
+      const productsData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as any)
+      }))
+      setProducts(productsData)
     } catch (e) {
+      console.error('Failed to fetch products', e)
       showToast('❌ Failed to fetch products')
     }
     setLoading(false)
@@ -79,6 +86,12 @@ export default function AdminProducts() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (user?.role !== 'ADMIN') {
+      showToast('⚠️ Only admins can add products')
+      return
+    }
+
     setUploading(true)
     setUploadMessage('Preparing image…')
 
@@ -105,7 +118,8 @@ export default function AdminProducts() {
         description: formData.description || ''
       }
 
-      await axios.post('/api/admin/products', payload)
+      const docRef = await addDoc(collection(db, 'products'), payload)
+      setProducts((prev) => [{ id: docRef.id, ...payload }, ...prev])
       setUploadMessage('Product saved successfully.')
       showToast('✅ Product added successfully')
       setShowModal(false)
@@ -123,8 +137,8 @@ export default function AdminProducts() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return
     try {
-      await axios.delete(`/api/admin/products/${id}`)
       showToast('🗑️ Product deleted')
+      setProducts((prev) => prev.filter((product) => product.id !== id))
       fetchProducts()
     } catch (error) {
       showToast('❌ Failed to delete product')

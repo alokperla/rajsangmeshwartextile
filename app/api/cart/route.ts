@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     const cartSnapshot = await adminDb.collection('carts').doc(uid).collection('items').get()
-    
-    const items = cartSnapshot.docs.map(doc => ({
+
+    const items = cartSnapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     }))

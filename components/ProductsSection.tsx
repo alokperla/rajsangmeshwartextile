@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import { useAuth, useCart, useCartSidebar, useToast } from '../lib/store'
 import Link from 'next/link'
 
@@ -53,10 +55,21 @@ export default function ProductsSection() {
   const { showToast } = useToast()
 
   useEffect(() => {
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(setProducts)
-      .catch(() => {})
+    const loadProducts = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'products'))
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...(doc.data() as any)
+        }))
+        setProducts(data)
+      } catch (error) {
+        console.error('Failed to load products from Firestore', error)
+        setProducts([])
+      }
+    }
+
+    loadProducts()
   }, [])
 
   // Listen for filter events from CategoriesSection

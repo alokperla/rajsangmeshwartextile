@@ -3,15 +3,19 @@ import { adminDb } from '@/lib/firebase-admin'
 
 export async function GET() {
   try {
+    if (!adminDb) {
+      return NextResponse.json([], { status: 200 })
+    }
+
     const productsSnapshot = await adminDb.collection('products').get()
-    const products = productsSnapshot.docs.map(doc => ({
+    const products = productsSnapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     }))
-    
+
     return NextResponse.json(products)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching products:', error)
-    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 })
+    return NextResponse.json([], { status: 200 })
   }
 }

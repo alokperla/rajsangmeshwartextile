@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       .collection('items')
       .get()
 
-    const cartItems = cartItemsSnapshot.docs.map((doc) => ({
+    const cartItems = cartItemsSnapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     }))
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     const itemsRef = cartRef.collection('items')
     const existingItems = await itemsRef.get()
 
-    existingItems.forEach((doc) => batch.delete(doc.ref))
+    existingItems.forEach((doc: any) => batch.delete(doc.ref))
     await batch.commit()
 
     return NextResponse.json({ id: orderRef.id, userId, total, address }, { status: 201 })

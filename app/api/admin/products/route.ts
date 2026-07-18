@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
     const docRef = await adminDb.collection('products').add(newProduct)
 
     return NextResponse.json({ id: docRef.id, ...newProduct })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating product:', error)
-    return NextResponse.json({ error: 'Failed to create product' }, { status: 500 })
+    return NextResponse.json({ error: error?.message || 'Failed to create product' }, { status: 500 })
   }
 }
