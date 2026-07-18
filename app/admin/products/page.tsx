@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { addDoc, collection, getDocs } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDocs, updateDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase'
 import { useAuth, useToast } from '@/lib/store'
 
@@ -17,6 +17,7 @@ export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [editingProductId, setEditingProductId] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [uploadMessage, setUploadMessage] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -67,6 +68,7 @@ export default function AdminProducts() {
     setImageFile(null)
     setImagePreview('')
     setUploadMessage('')
+    setEditingProductId(null)
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,7 +90,7 @@ export default function AdminProducts() {
     e.preventDefault()
 
     if (user?.role !== 'ADMIN') {
-      showToast('⚠️ Only admins can add products')
+      showToast('⚠️ Only admins can manage products')
       return
     }
 
@@ -118,17 +120,26 @@ export default function AdminProducts() {
         description: formData.description || ''
       }
 
-      const docRef = await addDoc(collection(db, 'products'), payload)
-      setProducts((prev) => [{ id: docRef.id, ...payload }, ...prev])
-      setUploadMessage('Product saved successfully.')
-      showToast('✅ Product added successfully')
+      if (editingProductId) {
+        const productRef = doc(db, 'products', editingProductId)
+        await updateDoc(productRef, payload)
+        setProducts((prev) => prev.map((product) => product.id === editingProductId ? { ...product, ...payload } : product))
+        setUploadMessage('Product updated successfully.')
+        showToast('✅ Product updated successfully')
+      } else {
+        const docRef = await addDoc(collection(db, 'products'), payload)
+        setProducts((prev) => [{ id: docRef.id, ...payload }, ...prev])
+        setUploadMessage('Product saved successfully.')
+        showToast('✅ Product added successfully')
+      }
+
       setShowModal(false)
       resetForm()
       fetchProducts()
     } catch (error: any) {
       console.error('Add product failed:', error)
       setUploadMessage('Product could not be saved.')
-      showToast(error?.response?.data?.error || error?.message || '❌ Failed to add product')
+      showToast(error?.message || '❌ Failed to save product')
     } finally {
       setUploading(false)
     }
@@ -137,12 +148,29 @@ export default function AdminProducts() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return
     try {
-      showToast('🗑️ Product deleted')
+      await deleteDoc(doc(db, 'products', id))
       setProducts((prev) => prev.filter((product) => product.id !== id))
+      showToast('🗑️ Product deleted')
       fetchProducts()
     } catch (error) {
+      console.error('Delete product failed:', error)
       showToast('❌ Failed to delete product')
     }
+  }
+
+  const handleEdit = (product: Product) => {
+    setEditingProductId(product.id)
+    setFormData({
+      name: product.name,
+      category: product.category,
+      price: String(product.price),
+      stock: String(product.stock),
+      description: (product as any).description || '',
+      imageUrl: (product as any).image?.startsWith('http') ? (product as any).image : ''
+    })
+    setImagePreview((product as any).image && !(product as any).image.startsWith('data:image') ? (product as any).image : '')
+    setUploadMessage('Editing product. Save to apply changes.')
+    setShowModal(true)
   }
 
   return (
@@ -182,7 +210,13 @@ export default function AdminProducts() {
                   </td>
                   <td className="px-6 py-4 text-slate-600">₹{p.price}</td>
                   <td className="px-6 py-4 text-slate-600">{p.stock}</td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right space-x-3">
+                    <button 
+                      onClick={() => handleEdit(p)}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                    >
+                      Edit
+                    </button>
                     <button 
                       onClick={() => handleDelete(p.id)}
                       className="text-red-500 hover:text-red-700 font-medium text-sm"
@@ -201,7 +235,7 @@ export default function AdminProducts() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Add New Product</h2>
+            <h2 className="text-xl font-bold mb-4">{editingProductId ? 'Edit Product' : 'Add New Product'}</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
@@ -253,7 +287,7 @@ export default function AdminProducts() {
               <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => { setShowModal(false); resetForm() }} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
                 <button type="submit" disabled={uploading} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:cursor-not-allowed disabled:bg-blue-400">
-                  {uploading ? 'Uploading...' : 'Save Product'}
+                  {uploading ? 'Saving...' : editingProductId ? 'Update Product' : 'Save Product'}
                 </button>
               </div>
             </form>

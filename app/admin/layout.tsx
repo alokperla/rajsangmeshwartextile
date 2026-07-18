@@ -17,7 +17,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [user, authLoading, router])
 
-  if (authLoading || !user || user.role !== 'ADMIN') {
+  if (authLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-xl text-slate-500">Verifying access...</div>
+      </div>
+    )
+  }
+
+  if (!user || user.role !== 'ADMIN') {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-xl text-slate-500">Verifying access...</div>
