@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import axios from 'axios'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/lib/firebase'
 import { useToast } from '@/lib/store'
 
 interface Product {
@@ -19,9 +17,25 @@ export default function AdminProducts() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadMessage, setUploadMessage] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState('')
   const { showToast } = useToast()
+
+  const readImageAsDataUrl = (file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result)
+        } else {
+          reject(new Error('Could not read the selected image.'))
+        }
+      }
+      reader.onerror = () => reject(new Error('Could not read the selected image.'))
+      reader.readAsDataURL(file)
+    })
+  }
   
   // Form State
   const [formData, setFormData] = useState({ name: '', category: 'Towels', price: '', stock: '', description: '', imageUrl: '' })
@@ -45,28 +59,42 @@ export default function AdminProducts() {
     setFormData({ name: '', category: 'Towels', price: '', stock: '', description: '', imageUrl: '' })
     setImageFile(null)
     setImagePreview('')
+    setUploadMessage('')
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadMessage('Please choose an image smaller than 2MB.')
+      showToast('⚠️ Please choose an image smaller than 2MB.')
+      return
+    }
+
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
+    setUploadMessage('Image selected. It will be embedded directly in the product data.')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setUploading(true)
+    setUploadMessage('Preparing image…')
 
     try {
       let image = formData.imageUrl || '/placeholder.jpg'
 
       if (imageFile) {
-        const fileName = `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`
-        const imageRef = ref(storage, `products/${fileName}`)
-        await uploadBytes(imageRef, imageFile)
-        image = await getDownloadURL(imageRef)
+        try {
+          image = await readImageAsDataUrl(imageFile)
+          setUploadMessage('Image ready. Saving product…')
+        } catch (err: any) {
+          console.error('Image processing failed:', err)
+          image = formData.imageUrl || '/placeholder.jpg'
+          setUploadMessage('Image could not be processed. Using a fallback image instead.')
+          showToast('⚠️ Image could not be processed. Using a fallback image instead.')
+        }
       }
 
       const payload = {
@@ -78,12 +106,14 @@ export default function AdminProducts() {
       }
 
       await axios.post('/api/admin/products', payload)
+      setUploadMessage('Product saved successfully.')
       showToast('✅ Product added successfully')
       setShowModal(false)
       resetForm()
       fetchProducts()
     } catch (error: any) {
       console.error(error)
+      setUploadMessage('Product could not be saved.')
       showToast(error?.response?.data?.error || '❌ Failed to add product')
     } finally {
       setUploading(false)
@@ -191,6 +221,9 @@ export default function AdminProducts() {
                   <div className="mt-3 overflow-hidden rounded-xl border border-slate-200">
                     <img src={imagePreview} alt="Preview" className="h-40 w-full object-cover" />
                   </div>
+                )}
+                {uploadMessage && (
+                  <p className="mt-2 text-sm text-slate-600">{uploadMessage}</p>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-4">

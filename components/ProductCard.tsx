@@ -17,6 +17,10 @@ export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart()
   const { user } = useAuth()
 
+  const imageSrc = product.image?.startsWith('data:image')
+    ? product.image
+    : product.image || '/placeholder.jpg'
+
   const handleAddToCart = async () => {
     try {
       await addToCart(product.id, 1)
@@ -31,7 +35,7 @@ export default function ProductCard({ product }: { product: Product }) {
     <div className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl transition duration-300 hover:-translate-y-1 hover:shadow-2xl dark:border-slate-800 dark:bg-slate-950">
       <div className="overflow-hidden rounded-[2rem]">
         <Image
-          src={product.image}
+          src={imageSrc}
           alt={product.name}
           width={200}
           height={200}
