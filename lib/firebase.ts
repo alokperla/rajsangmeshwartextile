@@ -13,8 +13,26 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase for Client
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+let app;
+let auth: any;
+let db: any;
+let storage: any;
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+const isFirebaseConfigured = !!firebaseConfig.apiKey;
+
+if (isFirebaseConfigured || typeof window !== 'undefined') {
+  try {
+    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+  } catch (error) {
+    console.error("Firebase client initialization failed:", error);
+  }
+} else {
+  // During build-time server-side pre-rendering, we don't have the API keys,
+  // so we skip initialization to prevent build failures.
+  console.warn("Firebase client configuration is missing. This is expected during server-side pre-rendering/static-generation.");
+}
+
+export { auth, db, storage };

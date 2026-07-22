@@ -107,8 +107,10 @@ export default function Cart() {
                 <span>₹{total}</span>
               </div>
               <div className="mt-6">
-                <label className="mb-2 block text-sm font-medium text-slate-700">Delivery Address</label>
+                <label htmlFor="delivery-address" className="mb-2 block text-sm font-medium text-slate-700">Delivery Address</label>
                 <textarea
+                  id="delivery-address"
+                  name="deliveryAddress"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
